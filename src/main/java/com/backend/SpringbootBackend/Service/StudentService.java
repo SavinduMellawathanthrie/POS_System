@@ -90,6 +90,7 @@ public class StudentService {
             student.setId(studentID);
             student.setScore(0);
             student.setDateJoined(LocalDate.now());
+            student.setUsername(Utilities.entityUsernameGenerator(student.getEmail()));
             studentRepository.save(student);
         } catch (Exception e) {
             // Log the exception and rethrow as a service-level exception

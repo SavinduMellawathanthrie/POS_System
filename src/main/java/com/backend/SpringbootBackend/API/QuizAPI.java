@@ -28,6 +28,11 @@ public class QuizAPI {
         return quizService.getQuizById(quizID);
     }
 
+    @GetMapping("/category/{category}")
+    public List<Quiz> getQuizzesByCategory(@PathVariable String category) {
+        return quizService.getQuizzesByCategory(category);
+    }
+
     @PostMapping
     public void addQuiz(@RequestBody Quiz quiz) {
         quizService.addQuiz(quiz);
