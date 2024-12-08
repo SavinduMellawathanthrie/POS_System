@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 public class SecurityIAM {
@@ -25,12 +26,18 @@ public class SecurityIAM {
     }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests(configurer -> configurer
-                .requestMatchers(HttpMethod.GET, "api/students/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "api/students/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.PUT, "api/students/**").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.DELETE, "api/students/**").hasRole("ADMIN")
-        );
+        http
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for API-only applications
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.GET, "/api/students/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/students/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/students/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/students/**").hasRole("ADMIN")
+                ); // Simplified syntax for enabling HTTP Basic authentication
+
         return http.build();
     }
+
+
+
 }
