@@ -97,7 +97,8 @@ public class StudentService {
             throw new ServiceRuntimeException("Failed to add a new student", e);
         }
 
-    }
+    }  // Signup
+
     public Student login(String email, String password) {
         try {
             Optional<Student> student = studentRepository.findByEmail(email);
@@ -117,7 +118,7 @@ public class StudentService {
             // Logs
             throw new ServiceRuntimeException("An error occurred during login", e);
         }
-    }
+    }    //login. JWT issuing only.
 
     public void updatePassword(String id, Student updatedStudent,String password, String passwordVerified) {
         if (password.equals(passwordVerified)){

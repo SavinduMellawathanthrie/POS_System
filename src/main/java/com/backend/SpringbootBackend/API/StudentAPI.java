@@ -32,7 +32,7 @@ public class StudentAPI {
     }
 
     @PostMapping
-    public void addStudent(@RequestBody Student student) {
+    public void createStudent(@RequestBody Student student) {
         studentService.createStudent(student);
     }
 
