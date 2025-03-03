@@ -1,6 +1,7 @@
 package com.backend.SpringbootBackend.Service;
 
 import com.backend.SpringbootBackend.Data.Item.Clothing;
+import com.backend.SpringbootBackend.Exception.ResourceNotFoundException;
 import com.backend.SpringbootBackend.Repository.ClothingRepository;
 import com.backend.SpringbootBackend.Service.Item.ClothingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,20 +19,35 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class) // Enables Mockito support
-public class ClothingServiceTest {
+class ClothingServiceTest {
 
     @Mock
-    private ClothingRepository clothingRepository; // Mocking repository
+    private ClothingRepository clothingRepository; // Mock repository
 
     @InjectMocks
-    private ClothingService clothingService; // Injecting the mock into service
+    private ClothingService clothingService; // Inject mock repository into service
 
     private Clothing clothing1, clothing2;
 
     @BeforeEach
     void setUp() {
-        clothing1 = new Clothing("C001", "Shirt", 25.0, 10, "Men", "Blue", "M");
-        clothing2 = new Clothing("C002", "Jeans", 50.0, 5, "Women", "Black", "L");
+        clothing1 = new Clothing();
+        clothing1.setId("C001");
+        clothing1.setDescription("Shirt");
+        clothing1.setUnitRetailPrice(25.00);
+        clothing1.setQuantity(10);
+        clothing1.setCategory("Men");
+        clothing1.setColor("Blue");
+        clothing1.setSize("M");
+
+        clothing2 = new Clothing();
+        clothing2.setId("C002");
+        clothing2.setDescription("Jeans");
+        clothing2.setUnitRetailPrice(50.00);
+        clothing2.setQuantity(5);
+        clothing2.setCategory("Women");
+        clothing2.setColor("Black");
+        clothing2.setSize("L");
     }
 
     @Test
@@ -56,20 +72,61 @@ public class ClothingServiceTest {
     }
 
     @Test
+    void testGetClothingById_NotFound() {
+        when(clothingRepository.findById("C999")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> clothingService.getClothingById("C999"));
+    }
+
+    @Test
     void testCreateClothing() {
         when(clothingRepository.save(any(Clothing.class))).thenReturn(clothing1);
 
-        clothingService.createClothing(clothing1);
+        Clothing created = clothingService.createClothing(clothing1);
 
+        assertNotNull(created);
+        assertEquals("C001", created.getId());
         verify(clothingRepository, times(1)).save(clothing1);
     }
 
     @Test
+    void testUpdateClothing() {
+        when(clothingRepository.findById("C001")).thenReturn(Optional.of(clothing1));
+        when(clothingRepository.save(any(Clothing.class))).thenReturn(clothing1);
+
+        Clothing updated = clothingService.updateClothing("C001", clothing1);
+
+        assertNotNull(updated);
+        assertEquals("C001", updated.getId());
+        verify(clothingRepository, times(1)).findById("C001");
+        verify(clothingRepository, times(1)).save(clothing1);
+    }
+
+    @Test
+    void testUpdateClothing_NotFound() {
+        when(clothingRepository.findById("C999")).thenReturn(Optional.empty());
+
+        Clothing updatedClothing = new Clothing();
+        updatedClothing.setId("C999");
+        updatedClothing.setDescription("T-shirt");
+
+        assertThrows(ResourceNotFoundException.class, () -> clothingService.updateClothing("C999", updatedClothing));
+    }
+
+    @Test
     void testDeleteClothing() {
+        when(clothingRepository.existsById("C001")).thenReturn(true);
         doNothing().when(clothingRepository).deleteById("C001");
 
         clothingService.deleteClothing("C001");
 
         verify(clothingRepository, times(1)).deleteById("C001");
+    }
+
+    @Test
+    void testDeleteClothing_NotFound() {
+        when(clothingRepository.existsById("C999")).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class, () -> clothingService.deleteClothing("C999"));
     }
 }

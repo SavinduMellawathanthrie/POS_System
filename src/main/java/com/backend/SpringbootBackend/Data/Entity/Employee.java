@@ -1,65 +1,67 @@
 package com.backend.SpringbootBackend.Data.Entity;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.backend.SpringbootBackend.Configuration.Role;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
-@jakarta.persistence.Entity
+import java.util.Collection;
+import java.util.List;
+
+@Entity
 @Table(name = "employee")
-public class Employee {
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Employee implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int dbCode;
 
-    private String id;
+    @Column(unique = true, nullable = false)
+    private String id;  // Unique employee ID
+
     private String name;
     private String nic;
-    private String role;
 
-    public Employee() {}
+    @Column(nullable = false)
+    private String password;  // Securely store hashed password
 
-    public int getDbCode() {
-        return dbCode;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role;  // Enum to define roles
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
-    public void setDbCode(int dbCode) {
-        this.dbCode = dbCode;
-    }
-
-    public String getId() {
+    @Override
+    public String getUsername() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 
-    public String getName() {
-        return name;
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
     }
 
-    public String getNic() {
-        return nic;
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
-
-    public void setNic(String nic) {
-        this.nic = nic;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
 }
-
-// This Class is made for RBAC only.

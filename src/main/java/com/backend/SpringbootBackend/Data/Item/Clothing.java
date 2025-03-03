@@ -10,9 +10,6 @@ public class Clothing extends Item {
 
     public Clothing() {}
 
-    public Clothing(String c001, String shirt, double v, int i, String men, String blue, String m) {
-    }
-
     public String getSize() {
         return size;
     }
