@@ -2,7 +2,7 @@ package com.backend.SpringbootBackend.Controller.Record;
 
 import com.backend.SpringbootBackend.Data.Item.Accessory;
 import com.backend.SpringbootBackend.Data.Item.Clothing;
-import com.backend.SpringbootBackend.Data.Record.CustomerRecord;
+import com.backend.SpringbootBackend.Data.Record.CustomerInvoice;
 import com.backend.SpringbootBackend.Service.Record.CustomerRecordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,28 +20,28 @@ public class CustomerRecordController {
     private CustomerRecordService customerRecordService;
 
     @PostMapping
-    public ResponseEntity<List<CustomerRecord>> createCustomerRecords(@RequestBody List<CustomerRecord> customerRecords) {
-        List<CustomerRecord> savedRecords = customerRecordService.createCustomerRecords(customerRecords);
+    public ResponseEntity<List<CustomerInvoice>> createCustomerRecords(@RequestBody List<CustomerInvoice> customerRecords) {
+        List<CustomerInvoice> savedRecords = customerRecordService.createCustomerRecords(customerRecords);
         return ResponseEntity.ok(savedRecords);
     }
 
     @PutMapping("/{billID}")
-    public ResponseEntity<List<CustomerRecord>> updateCustomerRecords(
+    public ResponseEntity<List<CustomerInvoice>> updateCustomerRecords(
             @PathVariable String billID,
-            @RequestBody List<CustomerRecord> updatedRecords) {
-        List<CustomerRecord> updatedList = customerRecordService.updateCustomerRecord(billID, updatedRecords);
+            @RequestBody List<CustomerInvoice> updatedRecords) {
+        List<CustomerInvoice> updatedList = customerRecordService.updateCustomerRecord(billID, updatedRecords);
         return ResponseEntity.ok(updatedList);
     }
 
     @GetMapping("/{billID}")
-    public ResponseEntity<List<CustomerRecord>> getCustomerRecordsByBillID(@PathVariable String billID) {
-        List<CustomerRecord> records = customerRecordService.getCustomerRecordsByBillID(billID);
+    public ResponseEntity<List<CustomerInvoice>> getCustomerRecordsByBillID(@PathVariable String billID) {
+        List<CustomerInvoice> records = customerRecordService.getCustomerRecordsByBillID(billID);
         return ResponseEntity.ok(records);
     }
 
     @GetMapping
-    public ResponseEntity<List<CustomerRecord>> getAllCustomerRecords() {
-        List<CustomerRecord> records = customerRecordService.getAllCustomerRecords();
+    public ResponseEntity<List<CustomerInvoice>> getAllCustomerRecords() {
+        List<CustomerInvoice> records = customerRecordService.getAllCustomerRecords();
         return ResponseEntity.ok(records);
     }
 

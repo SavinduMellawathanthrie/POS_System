@@ -2,11 +2,11 @@ package com.backend.SpringbootBackend.Service.Record;
 
 import com.backend.SpringbootBackend.Data.Item.Accessory;
 import com.backend.SpringbootBackend.Data.Item.Clothing;
-import com.backend.SpringbootBackend.Data.Record.CustomerRecord;
+import com.backend.SpringbootBackend.Data.Record.CustomerInvoice;
 import com.backend.SpringbootBackend.Exception.ResourceNotFoundException;
 import com.backend.SpringbootBackend.Repository.AccessoryRepository;
 import com.backend.SpringbootBackend.Repository.ClothingRepository;
-import com.backend.SpringbootBackend.Repository.CustomerRecordRepository;
+import com.backend.SpringbootBackend.Repository.CustomerInvoiceRepository;
 import com.backend.SpringbootBackend.Utilities.Utilities;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ import java.util.Objects;
 public class CustomerRecordService {
 
     @Autowired
-    private CustomerRecordRepository customerRecordRepository;
+    private CustomerInvoiceRepository customerRecordRepository;
 
     @Autowired
     private ClothingRepository clothingRepository;
@@ -37,11 +37,11 @@ public class CustomerRecordService {
      * @PreAuthorised
      */
     @Transactional
-    public List<CustomerRecord> createCustomerRecords(List<CustomerRecord> customerRecords) {
+    public List<CustomerInvoice> createCustomerRecords(List<CustomerInvoice> customerRecords) {
         String billID = Utilities.entityIDGenerator('B');
         LocalDate today = LocalDate.now();
 
-        for (CustomerRecord record : customerRecords) {
+        for (CustomerInvoice record : customerRecords) {
             String itemCode = record.getItemCode();
             double unitPrice = 0;
 
@@ -87,13 +87,13 @@ public class CustomerRecordService {
      * @return List of updated CustomerRecord objects
      */
     @Transactional
-    public List<CustomerRecord> updateCustomerRecord(String billID, List<CustomerRecord> updatedRecords) {
-        List<CustomerRecord> existingRecords = customerRecordRepository.findByBillID(billID);
+    public List<CustomerInvoice> updateCustomerRecord(String billID, List<CustomerInvoice> updatedRecords) {
+        List<CustomerInvoice> existingRecords = customerRecordRepository.findByBillID(billID);
         if (existingRecords.isEmpty()) {
             throw new ResourceNotFoundException("No customer records found with billID: " + billID);
         }
         // Restore stock quantities for old records
-        for (CustomerRecord record : existingRecords) {
+        for (CustomerInvoice record : existingRecords) {
             String itemCode = record.getItemCode();
 
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
@@ -112,7 +112,7 @@ public class CustomerRecordService {
 
         // Deduct stock for updated records
         LocalDate today = LocalDate.now();
-        for (CustomerRecord record : updatedRecords) {
+        for (CustomerInvoice record : updatedRecords) {
             String itemCode = record.getItemCode();
 
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
@@ -148,8 +148,8 @@ public class CustomerRecordService {
      * @param billID the bill ID
      * @return List of CustomerRecord objects
      */
-    public List<CustomerRecord> getCustomerRecordsByBillID(String billID) {
-        List<CustomerRecord> customerRecords = customerRecordRepository.findByBillID(billID);
+    public List<CustomerInvoice> getCustomerRecordsByBillID(String billID) {
+        List<CustomerInvoice> customerRecords = customerRecordRepository.findByBillID(billID);
         if (customerRecords.isEmpty()) {
             throw new ResourceNotFoundException("No customer records found with billID: " + billID);
         }
@@ -161,7 +161,7 @@ public class CustomerRecordService {
      *
      * @return List of all CustomerRecord objects
      */
-    public List<CustomerRecord> getAllCustomerRecords() {
+    public List<CustomerInvoice> getAllCustomerRecords() {
         return customerRecordRepository.findAll();
     }
 
@@ -172,7 +172,7 @@ public class CustomerRecordService {
      */
     @Transactional
     public void deleteCustomerRecords(String billID) {
-        List<CustomerRecord> recordsToDelete = customerRecordRepository.findByBillID(billID);
+        List<CustomerInvoice> recordsToDelete = customerRecordRepository.findByBillID(billID);
         if (recordsToDelete.isEmpty()) {
             throw new ResourceNotFoundException("No customer records found with billID: " + billID);
         }
@@ -186,7 +186,7 @@ public class CustomerRecordService {
      */
     public List<Clothing> getClothingRecordsAfterDate(LocalDate startDate) {
 
-        List<CustomerRecord> records = customerRecordRepository.findByDateAfter(startDate);
+        List<CustomerInvoice> records = customerRecordRepository.findByDateAfter(startDate);
         List<String> clothingItemCodes = clothingRepository.findAllItemCodes();
         List<Clothing> clothingRecords = new ArrayList<>();
 
@@ -195,7 +195,7 @@ public class CustomerRecordService {
             Clothing clothingItemHolder = new Clothing();
             clothingItemHolder = clothingItem;
             clothingItemHolder.setQuantity(0);
-            for (CustomerRecord record : records) {
+            for (CustomerInvoice record : records) {
                 if (Objects.equals(record.getItemCode(), itemCode)){
                     clothingItemHolder.setQuantity(clothingItemHolder.getQuantity()+record.getQuantity());
                 }
@@ -212,7 +212,7 @@ public class CustomerRecordService {
 
     public List<Accessory> getAccessoryRecordsAfterDate(LocalDate startDate) {
 
-        List<CustomerRecord> records = customerRecordRepository.findByDateAfter(startDate);
+        List<CustomerInvoice> records = customerRecordRepository.findByDateAfter(startDate);
         List<String> accessoryItemCodes = accessoryRepository.findAllItemCodes();
         List<Accessory> accessoryRecords = new ArrayList<>();
 
@@ -222,7 +222,7 @@ public class CustomerRecordService {
             accessoryItemHolder = accessoryItem;
             accessoryItemHolder.setQuantity(0);
 
-            for (CustomerRecord record : records) {
+            for (CustomerInvoice record : records) {
                 if (Objects.equals(record.getItemCode(), itemCode)) {
                     accessoryItemHolder.setQuantity(accessoryItemHolder.getQuantity() + record.getQuantity());
                 }
