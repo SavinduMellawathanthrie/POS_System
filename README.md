@@ -29,7 +29,7 @@ Setup & Installation
 bash
 Copy
 Edit
-git clone https://github.com/your-repo/pos-system-backend.git
+git clone https://github.com/SavinduMellawathanthrie/pos-system-backend.git
 cd pos-system-backend
 2. Configure Environment Variables
 Set up your JWT Secret Key and database configurations:
