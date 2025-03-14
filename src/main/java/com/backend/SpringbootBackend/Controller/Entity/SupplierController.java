@@ -4,10 +4,12 @@ import com.backend.SpringbootBackend.Data.Entity.Supplier;
 import com.backend.SpringbootBackend.Service.Entity.SupplierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'USER')")
 @RestController
 @RequestMapping("/api/suppliers")
 public class SupplierController {

@@ -2,30 +2,22 @@ package com.backend.SpringbootBackend.Data.Entity;
 
 import com.backend.SpringbootBackend.Configuration.Role;
 import jakarta.persistence.*;
-import lombok.*;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import java.util.Collection;
-import java.util.List;
 
 @Entity
 @Table(name = "employee")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class Employee implements UserDetails {
+
+public class Employee {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int dbCode;
-
     @Column(unique = true, nullable = false)
     private String id;  // Unique employee ID
 
     private String name;
+
+    @Column(unique = true, nullable = false)
+    private String username;
+
+    @Column(unique = true, nullable = false)
     private String nic;
 
     @Column(nullable = false)
@@ -35,33 +27,54 @@ public class Employee implements UserDetails {
     @Column(nullable = false)
     private Role role;  // Enum to define roles
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.name()));
+    public Employee() {
     }
 
-    @Override
-    public String getUsername() {
+    public String getId() {
         return id;
     }
 
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
+    public void setId(String id) {
+        this.id = id;
     }
 
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
+    public String getName() {
+        return name;
     }
 
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return true;
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getNic() {
+        return nic;
+    }
+
+    public void setNic(String nic) {
+        this.nic = nic;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 }

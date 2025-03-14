@@ -1,7 +1,11 @@
 package com.backend.SpringbootBackend.Data.Item;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+@Setter
+@Getter
 @Entity
 @Table(name = "clothing")
 public class Clothing extends Item {
@@ -10,19 +14,4 @@ public class Clothing extends Item {
 
     public Clothing() {}
 
-    public String getSize() {
-        return size;
-    }
-
-    public void setSize(String size) {
-        this.size = size;
-    }
-
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
 }

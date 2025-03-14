@@ -1,74 +1,114 @@
 package com.backend.SpringbootBackend.Service.Entity;
 
-import com.backend.SpringbootBackend.Configuration.Role;
 import com.backend.SpringbootBackend.Data.Entity.Employee;
-import com.backend.SpringbootBackend.Exception.ResourceNotFoundException;
+import com.backend.SpringbootBackend.Exception.ServiceRuntimeException;
 import com.backend.SpringbootBackend.Repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+@PreAuthorize("hasRole('ROLE_ADMIN')")
 @Service
 public class EmployeeService {
 
+    private static final Logger LOGGER = Logger.getLogger(EmployeeService.class.getName());
     private final EmployeeRepository employeeRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    public EmployeeService(EmployeeRepository employeeRepository, PasswordEncoder passwordEncoder) {
+    public EmployeeService(EmployeeRepository employeeRepository) {
         this.employeeRepository = employeeRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public List<Employee> getAllEmployees() {
+        LOGGER.info("Fetching all employees...");
         return employeeRepository.findAll();
-    }
-
-    public Employee getEmployeeById(String id) {
-        return employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with ID: " + id));
-    }
-
-    public Employee getEmployeeByNic(String nic) {
-        return employeeRepository.findByNic(nic)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with NIC: " + nic));
     }
 
     @Transactional
     public Employee createEmployee(Employee employee) {
-        // Hash the password before saving
-        employee.setPassword(passwordEncoder.encode(employee.getPassword()));
+        LOGGER.info("Creating new employee with username: " + employee.getUsername());
 
-        // Ensure role is valid (Default to ROLE_USER if not set)
-        if (employee.getRole() == null) {
-            employee.setRole(Role.ROLE_USER);
+        if (employeeRepository.findByUsername(employee.getUsername()).isPresent()) {
+            LOGGER.warning("Username already exists: " + employee.getUsername());
+            throw new ServiceRuntimeException("Username already exists.");
+        }
+        if (employeeRepository.findByNic(employee.getNic()).isPresent()) {
+            LOGGER.warning("NIC already exists: " + employee.getNic());
+            throw new ServiceRuntimeException("NIC already exists.");
         }
 
-        return employeeRepository.save(employee);
+        if (employee.getId() == null || employee.getId().isEmpty()) {
+            employee.setId(generateEmployeeId());
+            LOGGER.info("Generated Employee ID: " + employee.getId());
+        }
+
+        Employee savedEmployee = employeeRepository.save(employee);
+        LOGGER.info("Successfully created employee: " + savedEmployee.getId());
+        return savedEmployee;
     }
 
     @Transactional
     public Employee updateEmployee(String id, Employee updatedEmployee) {
+        LOGGER.info("Updating employee with ID: " + id);
+
         Employee existingEmployee = getEmployeeById(id);
 
-        existingEmployee.setName(updatedEmployee.getName());
-        existingEmployee.setNic(updatedEmployee.getNic());
-        existingEmployee.setRole(updatedEmployee.getRole());
-
-        // Only update password if provided
-        if (updatedEmployee.getPassword() != null && !updatedEmployee.getPassword().isEmpty()) {
-            existingEmployee.setPassword(passwordEncoder.encode(updatedEmployee.getPassword()));
+        if (!existingEmployee.getUsername().equals(updatedEmployee.getUsername()) &&
+                employeeRepository.findByUsername(updatedEmployee.getUsername()).isPresent()) {
+            LOGGER.warning("Username already exists: " + updatedEmployee.getUsername());
+            throw new ServiceRuntimeException("Username already exists.");
         }
 
-        return employeeRepository.save(existingEmployee);
+        if (!existingEmployee.getNic().equals(updatedEmployee.getNic()) &&
+                employeeRepository.findByNic(updatedEmployee.getNic()).isPresent()) {
+            LOGGER.warning("NIC already exists: " + updatedEmployee.getNic());
+            throw new ServiceRuntimeException("NIC already exists.");
+        }
+
+        updatedEmployee.setId(id);
+        Employee savedEmployee = employeeRepository.save(updatedEmployee);
+        LOGGER.info("Successfully updated employee: " + id);
+        return savedEmployee;
     }
 
     @Transactional
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     public void deleteEmployee(String id) {
-        Employee employee = getEmployeeById(id);
-        employeeRepository.delete(employee);
+        LOGGER.info("Deleting employee with ID: " + id);
+
+        if (!employeeRepository.existsById(id)) {
+            LOGGER.warning("Employee not found with ID: " + id);
+            throw new ServiceRuntimeException("Employee not found with ID: " + id);
+        }
+
+        employeeRepository.deleteById(id);
+        LOGGER.info("Successfully deleted employee with ID: " + id);
+    }
+
+    public Employee getEmployeeById(String id) {
+        LOGGER.info("Fetching employee with ID: " + id);
+
+        Optional<Employee> employee = employeeRepository.findById(id);
+        if (employee.isPresent()) {
+            LOGGER.info("Employee found: " + id);
+            return employee.get();
+        } else {
+            LOGGER.warning("Employee not found with ID: " + id);
+            throw new ServiceRuntimeException("Employee not found with ID: " + id);
+        }
+    }
+
+    private String generateEmployeeId() {
+        String id = "E" + UUID.randomUUID().toString().substring(0, 5).toUpperCase();
+        LOGGER.info("Generated new employee ID: " + id);
+        return id;
     }
 }

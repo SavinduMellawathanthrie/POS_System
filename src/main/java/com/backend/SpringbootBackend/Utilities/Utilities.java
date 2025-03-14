@@ -1,12 +1,20 @@
 package com.backend.SpringbootBackend.Utilities;
 
+import com.backend.SpringbootBackend.Configuration.AuthController;
+import io.jsonwebtoken.security.Keys;
+
+import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Utilities {
 
+    private static final Logger LOGGER = Logger.getLogger(Utilities.class.getName());
     public static final String[] categoryList = {
             "Men",
             "Women",
@@ -52,10 +60,12 @@ public class Utilities {
         return itemID;
     }
 
-    public static String entityUsernameGenerator(String email) {
-        return email.substring(0, email.indexOf('@'));
+    public static String keyGenerator(){
+        SecretKey key = Keys.secretKeyFor(io.jsonwebtoken.SignatureAlgorithm.HS256);
+        String base64Key = Base64.getEncoder().encodeToString(key.getEncoded());
+        LOGGER.log(Level.WARNING, "Secret Key."+base64Key);
+        return base64Key;
     }
-
     // Intentionally left blank
 }
 

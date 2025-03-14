@@ -11,6 +11,7 @@ import com.backend.SpringbootBackend.Repository.ClothingRepository;
 import com.backend.SpringbootBackend.Repository.PurchaseStockRepository;
 import com.backend.SpringbootBackend.Repository.SupplierRepository;
 import com.backend.SpringbootBackend.Utilities.Utilities;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,9 +19,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
 @Service
 public class PurchaseStockService {
+
+    private static final Logger LOGGER = Logger.getLogger(PurchaseStockService.class.getName());
 
     private final PurchaseStockRepository purchaseStockRepository;
     private final ClothingRepository clothingRepository;
@@ -41,6 +47,7 @@ public class PurchaseStockService {
 
     @Transactional
     public List<PurchaseStock> createUpcomingOrder(List<PurchaseStock> orders) {
+        LOGGER.info("Creating upcoming orders...");
         try {
             String orderID = Utilities.entityIDGenerator('U');
             for (PurchaseStock order : orders) {
@@ -79,28 +86,37 @@ public class PurchaseStockService {
                 // Update record fields
                 order.setOrderID(orderID);
                 order.setGrossTotal(total);
+                LOGGER.info("Order created with ID: " + orderID + " and Total: " + total);
             }
             return purchaseStockRepository.saveAll(orders);
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to create upcoming orders: " + e.getMessage(), e);
             throw new ServiceRuntimeException("Failed to create upcoming orders: " + e.getMessage(), e);
         }
     }
 
     // Retrieve an upcoming order by ID
     public PurchaseStock getUpcomingOrderById(int dbCode) {
+        LOGGER.info("Fetching upcoming order with dbCode: " + dbCode);
         try {
             return purchaseStockRepository.findById(dbCode)
-                    .orElseThrow(() -> new ResourceNotFoundException("Order not found with dbCode: " + dbCode));
+                    .orElseThrow(() -> {
+                        LOGGER.warning("Order not found with dbCode: " + dbCode);
+                        return new ResourceNotFoundException("Order not found with dbCode: " + dbCode);
+                    });
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error retrieving order with dbCode: " + dbCode, e);
             throw new ServiceRuntimeException("Error retrieving order with dbCode: " + dbCode, e);
         }
     }
 
     // Retrieve all upcoming orders
     public List<PurchaseStock> getAllUpcomingOrders() {
+        LOGGER.info("Fetching all upcoming orders...");
         try {
             return purchaseStockRepository.findAll();
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to retrieve all upcoming orders: " + e.getMessage(), e);
             throw new ServiceRuntimeException("Failed to retrieve all upcoming orders: " + e.getMessage(), e);
         }
     }
@@ -108,6 +124,7 @@ public class PurchaseStockService {
     // Update an existing upcoming order
     @Transactional
     public List<PurchaseStock> updateUpcomingOrder(int dbCode, List<PurchaseStock> updatedOrders) {
+        LOGGER.info("Updating upcoming orders with dbCode: " + dbCode);
         // Retrieve all existing upcoming orders by the given dbCode
         List<PurchaseStock> existingOrders = purchaseStockRepository.findByOrderID(updatedOrders.get(0).getOrderID());
         if (existingOrders.isEmpty()) {
@@ -171,22 +188,28 @@ public class PurchaseStockService {
             // Update order details as per updatedOrder.
             updatedOrderList.add(purchaseStockRepository.save(updatedOrder));
         }
+        LOGGER.info("Updated orders with dbCode: " + dbCode);
         return updatedOrderList;
     }
 
     // Delete an upcoming order by ID
     public void deleteUpcomingOrder(int dbCode) {
+        LOGGER.info("Deleting upcoming order with dbCode: " + dbCode);
         try {
             PurchaseStock order = getUpcomingOrderById(dbCode);
             purchaseStockRepository.delete(order);
+            LOGGER.info("Successfully deleted order with dbCode: " + dbCode);
         } catch (ResourceNotFoundException e) {
+            LOGGER.warning("Order not found with dbCode: " + dbCode);
             throw e; // Re-throw if it's a not-found error
         } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to delete order with dbCode: " + dbCode, e);
             throw new ServiceRuntimeException("Failed to delete order with dbCode: " + dbCode, e);
         }
     }
 
     public List<Clothing> getClothingSupplyAfterDate(LocalDate startDate) {
+        LOGGER.info("Fetching clothing supply after date: " + startDate);
         List<PurchaseStock> records = purchaseStockRepository.findByOrderDateAfter(startDate);
         List<Clothing> clothingItemCodes = clothingRepository.findAll();
         List<Clothing> clothingRecords = new ArrayList<>();
@@ -203,10 +226,12 @@ public class PurchaseStockService {
             clothingRecords.add(clothingItemHolder);
         }
         clothingRecords.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
+        LOGGER.info("Retrieved clothing supply records.");
         return clothingRecords;
     }
 
     public List<Accessory> getAccessorySupplyAfterDate(LocalDate startDate) {
+        LOGGER.info("Fetching accessory supply after date: " + startDate);
         List<PurchaseStock> records = purchaseStockRepository.findByOrderDateAfter(startDate);
         List<Accessory> accessoryItemCodes = accessoryRepository.findAll();
         List<Accessory> accessoryRecords = new ArrayList<>();
@@ -223,6 +248,7 @@ public class PurchaseStockService {
             accessoryRecords.add(accessoryItemHolder);
         }
         accessoryRecords.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
+        LOGGER.info("Retrieved accessory supply records.");
         return accessoryRecords;
     }
 }

@@ -2,14 +2,15 @@ package com.backend.SpringbootBackend.Data.Record;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDate;
-import java.util.Date;
 
+@Setter
 @Getter
 @Entity
-@Table(name = "customerrecords")
-public class CustomerRecord {
+@Table(name = "customer_invoice")
+public class CustomerInvoice {
     private int customerId;
 
     @Id
@@ -25,45 +26,6 @@ public class CustomerRecord {
     private double total;
     private double netValue;
 
-    public CustomerRecord(){}
+    public CustomerInvoice(){}
 
-    public void setDbCode(int dbCode) {
-        this.dbCode = dbCode;
-    }
-
-    public void setCustomerId(int customerId) {
-        this.customerId = customerId;
-    }
-
-    public void setBillID(String billID) {
-        this.billID = billID;
-    }
-
-    public void setDate(LocalDate date) {
-        this.date = date;
-    }
-
-    public void setItemCode(String itemCode) {
-        this.itemCode = itemCode;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public void setUnitPrice(double unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
-    public void setDiscount(double discount) {
-        this.discount = discount;
-    }
-
-    public void setTotal(double total) {
-        this.total = total;
-    }
-
-    public void setNetValue(double netValue) {
-        this.netValue = netValue;
-    }
 }

@@ -9,6 +9,7 @@ import com.backend.SpringbootBackend.Repository.ClothingRepository;
 import com.backend.SpringbootBackend.Repository.CustomerInvoiceRepository;
 import com.backend.SpringbootBackend.Utilities.Utilities;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,12 +17,16 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Logger;
 
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_USER')")
 @Service
-public class CustomerRecordService {
+public class CustomerInvoiceService {
+
+    private static final Logger LOGGER = Logger.getLogger(CustomerInvoiceService.class.getName());
 
     @Autowired
-    private CustomerInvoiceRepository customerRecordRepository;
+    private CustomerInvoiceRepository customerInvoiceRepository;
 
     @Autowired
     private ClothingRepository clothingRepository;
@@ -30,191 +35,212 @@ public class CustomerRecordService {
     private AccessoryRepository accessoryRepository;
 
     /**
-     * Create multiple CustomerRecords and return the saved records.
+     * Create multiple CustomerInvoices and return the saved invoices.
      *
-     * @param customerRecords a List of CustomerRecord objects to create
-     * @return List of created CustomerRecord objects
-     * @PreAuthorised
+     * @param customerInvoices a List of CustomerInvoice objects to create
+     * @return List of created CustomerInvoice objects
      */
     @Transactional
-    public List<CustomerInvoice> createCustomerRecords(List<CustomerInvoice> customerRecords) {
+    public List<CustomerInvoice> createCustomerInvoices(List<CustomerInvoice> customerInvoices) {
+        LOGGER.info("Creating customer invoices...");
         String billID = Utilities.entityIDGenerator('B');
         LocalDate today = LocalDate.now();
 
-        for (CustomerInvoice record : customerRecords) {
-            String itemCode = record.getItemCode();
+        for (CustomerInvoice invoice : customerInvoices) {
+            String itemCode = invoice.getItemCode();
             double unitPrice = 0;
 
             // Check if the item exists in the clothing repository
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
             if (clothingItem != null) {
+                LOGGER.info("Clothing item found: " + itemCode);
                 unitPrice = clothingItem.getUnitRetailPrice();
-                clothingItem.setQuantity(clothingItem.getQuantity() - record.getQuantity());
+                clothingItem.setQuantity(clothingItem.getQuantity() - invoice.getQuantity());
                 clothingRepository.save(clothingItem);
             }
             // Check if the item exists in the accessory repository
             else {
                 Accessory accessoryItem = accessoryRepository.findByItemCode(itemCode);
                 if (accessoryItem != null) {
+                    LOGGER.info("Accessory item found: " + itemCode);
                     unitPrice = accessoryItem.getUnitRetailPrice();
-                    accessoryItem.setQuantity(accessoryItem.getQuantity() - record.getQuantity());
+                    accessoryItem.setQuantity(accessoryItem.getQuantity() - invoice.getQuantity());
                     accessoryRepository.save(accessoryItem);
                 } else {
+                    LOGGER.warning("Item not found with itemCode: " + itemCode);
                     throw new ResourceNotFoundException("Item not found with itemCode: " + itemCode);
                 }
             }
 
             // Calculate total and net value
-            double total = unitPrice * record.getQuantity();
-            double netValue = total - (total * record.getDiscount() / 100);
+            double total = unitPrice * invoice.getQuantity();
+            double netValue = total - (total * invoice.getDiscount() / 100);
 
-            // Update record fields
-            record.setBillID(billID);
-            record.setDate(today);
-            record.setUnitPrice(unitPrice);
-            record.setTotal(total);
-            record.setNetValue(netValue);
+            // Update invoice fields
+            invoice.setBillID(billID);
+            invoice.setDate(today);
+            invoice.setUnitPrice(unitPrice);
+            invoice.setTotal(total);
+            invoice.setNetValue(netValue);
         }
 
-        return customerRecordRepository.saveAll(customerRecords);
+        LOGGER.info("Customer invoices created successfully.");
+        return customerInvoiceRepository.saveAll(customerInvoices);
     }
 
     /**
-     * Update CustomerRecords for a given bill ID.
+     * Update CustomerInvoices for a given bill ID.
      *
-     * @param billID the bill ID associated with the records to update
-     * @param updatedRecords the new list of CustomerRecord objects
-     * @return List of updated CustomerRecord objects
+     * @param billID the bill ID associated with the invoices to update
+     * @param updatedInvoices the new list of CustomerInvoice objects
+     * @return List of updated CustomerInvoice objects
      */
     @Transactional
-    public List<CustomerInvoice> updateCustomerRecord(String billID, List<CustomerInvoice> updatedRecords) {
-        List<CustomerInvoice> existingRecords = customerRecordRepository.findByBillID(billID);
-        if (existingRecords.isEmpty()) {
-            throw new ResourceNotFoundException("No customer records found with billID: " + billID);
+    public List<CustomerInvoice> updateCustomerInvoice(String billID, List<CustomerInvoice> updatedInvoices) {
+        LOGGER.info("Updating customer invoices for billID: " + billID);
+        List<CustomerInvoice> existingInvoices = customerInvoiceRepository.findByBillID(billID);
+        if (existingInvoices.isEmpty()) {
+            LOGGER.warning("No invoices found for billID: " + billID);
+            throw new ResourceNotFoundException("No customer invoices found with billID: " + billID);
         }
-        // Restore stock quantities for old records
-        for (CustomerInvoice record : existingRecords) {
-            String itemCode = record.getItemCode();
+
+        // Restore stock quantities for old invoices
+        for (CustomerInvoice invoice : existingInvoices) {
+            String itemCode = invoice.getItemCode();
 
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
             if (clothingItem != null) {
-                clothingItem.setQuantity(clothingItem.getQuantity() - record.getQuantity());
+                clothingItem.setQuantity(clothingItem.getQuantity() - invoice.getQuantity());
                 clothingRepository.save(clothingItem);
             }
             else {
                 Accessory accessoryItem = accessoryRepository.findByItemCode(itemCode);
                 if (accessoryItem != null) {
-                    accessoryItem.setQuantity(accessoryItem.getQuantity() - record.getQuantity());
+                    accessoryItem.setQuantity(accessoryItem.getQuantity() - invoice.getQuantity());
                     accessoryRepository.save(accessoryItem);
                 }
             }
         }
 
-        // Deduct stock for updated records
+        // Deduct stock for updated invoices
         LocalDate today = LocalDate.now();
-        for (CustomerInvoice record : updatedRecords) {
-            String itemCode = record.getItemCode();
+        for (CustomerInvoice invoice : updatedInvoices) {
+            String itemCode = invoice.getItemCode();
+            double unitPrice = 0;
 
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
-            double unitPrice = 0;
             if (clothingItem != null) {
                 unitPrice = clothingItem.getUnitRetailPrice();
-                clothingItem.setQuantity(clothingItem.getQuantity() + record.getQuantity());
+                clothingItem.setQuantity(clothingItem.getQuantity() + invoice.getQuantity());
                 clothingRepository.save(clothingItem);
             } else {
                 Accessory accessoryItem = accessoryRepository.findByItemCode(itemCode);
                 if (accessoryItem != null) {
                     unitPrice  = accessoryItem.getUnitRetailPrice();
-                    accessoryItem.setQuantity(accessoryItem.getQuantity() + record.getQuantity());
+                    accessoryItem.setQuantity(accessoryItem.getQuantity() + invoice.getQuantity());
                     accessoryRepository.save(accessoryItem);
                 } else {
+                    LOGGER.warning("Item not found with itemCode: " + itemCode);
                     throw new ResourceNotFoundException("Item not found with itemCode: " + itemCode);
                 }
             }
 
-            double total = unitPrice * record.getQuantity();
-            double netValue = total - (total * record.getDiscount() / 100);
+            double total = unitPrice * invoice.getQuantity();
+            double netValue = total - (total * invoice.getDiscount() / 100);
 
-            record.setDate(today);
-            record.setNetValue(netValue);
-            record.setTotal(total);
+            invoice.setDate(today);
+            invoice.setNetValue(netValue);
+            invoice.setTotal(total);
         }
-        return createCustomerRecords(updatedRecords);
+
+        LOGGER.info("Customer invoices updated successfully for billID: " + billID);
+        return createCustomerInvoices(updatedInvoices);
     }
 
     /**
-     * Retrieve CustomerRecords by bill ID.
+     * Retrieve CustomerInvoices by bill ID.
      *
      * @param billID the bill ID
-     * @return List of CustomerRecord objects
+     * @return List of CustomerInvoice objects
      */
-    public List<CustomerInvoice> getCustomerRecordsByBillID(String billID) {
-        List<CustomerInvoice> customerRecords = customerRecordRepository.findByBillID(billID);
-        if (customerRecords.isEmpty()) {
-            throw new ResourceNotFoundException("No customer records found with billID: " + billID);
+    public List<CustomerInvoice> getCustomerInvoicesByBillID(String billID) {
+        LOGGER.info("Fetching customer invoices for billID: " + billID);
+        List<CustomerInvoice> customerInvoices = customerInvoiceRepository.findByBillID(billID);
+        if (customerInvoices.isEmpty()) {
+            LOGGER.warning("No customer invoices found for billID: " + billID);
+            throw new ResourceNotFoundException("No customer invoices found with billID: " + billID);
         }
-        return customerRecords;
+        LOGGER.info("Customer invoices retrieved for billID: " + billID);
+        return customerInvoices;
     }
 
     /**
-     * Retrieve all CustomerRecords.
+     * Retrieve all CustomerInvoices.
      *
-     * @return List of all CustomerRecord objects
+     * @return List of all CustomerInvoice objects
      */
-    public List<CustomerInvoice> getAllCustomerRecords() {
-        return customerRecordRepository.findAll();
+    public List<CustomerInvoice> getAllCustomerInvoices() {
+        LOGGER.info("Fetching all customer invoices...");
+        List<CustomerInvoice> invoices = customerInvoiceRepository.findAll();
+        LOGGER.info("All customer invoices retrieved.");
+        return invoices;
     }
 
     /**
-     * Delete CustomerRecords by bill ID.
+     * Delete CustomerInvoices by bill ID.
      *
      * @param billID the bill ID
      */
     @Transactional
-    public void deleteCustomerRecords(String billID) {
-        List<CustomerInvoice> recordsToDelete = customerRecordRepository.findByBillID(billID);
-        if (recordsToDelete.isEmpty()) {
-            throw new ResourceNotFoundException("No customer records found with billID: " + billID);
+    public void deleteCustomerInvoices(String billID) {
+        LOGGER.info("Deleting customer invoices for billID: " + billID);
+        List<CustomerInvoice> invoicesToDelete = customerInvoiceRepository.findByBillID(billID);
+        if (invoicesToDelete.isEmpty()) {
+            LOGGER.warning("No customer invoices found for billID: " + billID);
+            throw new ResourceNotFoundException("No customer invoices found with billID: " + billID);
         }
-        customerRecordRepository.deleteAll(recordsToDelete);
+        customerInvoiceRepository.deleteAll(invoicesToDelete);
+        LOGGER.info("Customer invoices deleted for billID: " + billID);
     }
 
     /**
-     * Retrieve all CustomerRecords with a date after the specified date.
+     * Retrieve all CustomerInvoices with a date after the specified date.
      *
      * @param startDate the starting date (exclusive)
      */
-    public List<Clothing> getClothingRecordsAfterDate(LocalDate startDate) {
-
-        List<CustomerInvoice> records = customerRecordRepository.findByDateAfter(startDate);
+    public List<Clothing> getClothingInvoicesAfterDate(LocalDate startDate) {
+        LOGGER.info("Fetching clothing invoices after date: " + startDate);
+        List<CustomerInvoice> invoices = customerInvoiceRepository.findByDateAfter(startDate);
         List<String> clothingItemCodes = clothingRepository.findAllItemCodes();
-        List<Clothing> clothingRecords = new ArrayList<>();
+        List<Clothing> clothingInvoices = new ArrayList<>();
 
         for (String itemCode : clothingItemCodes) {
             Clothing clothingItem = clothingRepository.findByItemCode(itemCode);
             Clothing clothingItemHolder = new Clothing();
             clothingItemHolder = clothingItem;
             clothingItemHolder.setQuantity(0);
-            for (CustomerInvoice record : records) {
-                if (Objects.equals(record.getItemCode(), itemCode)){
-                    clothingItemHolder.setQuantity(clothingItemHolder.getQuantity()+record.getQuantity());
+            for (CustomerInvoice invoice : invoices) {
+                if (Objects.equals(invoice.getItemCode(), itemCode)){
+                    clothingItemHolder.setQuantity(clothingItemHolder.getQuantity() + invoice.getQuantity());
                 }
             }
-            clothingRecords.add(clothingItemHolder);
+            clothingInvoices.add(clothingItemHolder);
         }
         try {
-            clothingRecords.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
+            clothingInvoices.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
         } catch (Exception e) {
+            LOGGER.severe("Error sorting clothing invoices: " + e.getMessage());
             throw new RuntimeException(e);
         }
-        return clothingRecords;
+        LOGGER.info("Clothing invoices retrieved after date: " + startDate);
+        return clothingInvoices;
     }
 
-    public List<Accessory> getAccessoryRecordsAfterDate(LocalDate startDate) {
-
-        List<CustomerInvoice> records = customerRecordRepository.findByDateAfter(startDate);
+    public List<Accessory> getAccessoryInvoicesAfterDate(LocalDate startDate) {
+        LOGGER.info("Fetching accessory invoices after date: " + startDate);
+        List<CustomerInvoice> invoices = customerInvoiceRepository.findByDateAfter(startDate);
         List<String> accessoryItemCodes = accessoryRepository.findAllItemCodes();
-        List<Accessory> accessoryRecords = new ArrayList<>();
+        List<Accessory> accessoryInvoices = new ArrayList<>();
 
         for (String itemCode : accessoryItemCodes) {
             Accessory accessoryItem = accessoryRepository.findByItemCode(itemCode);
@@ -222,15 +248,16 @@ public class CustomerRecordService {
             accessoryItemHolder = accessoryItem;
             accessoryItemHolder.setQuantity(0);
 
-            for (CustomerInvoice record : records) {
-                if (Objects.equals(record.getItemCode(), itemCode)) {
-                    accessoryItemHolder.setQuantity(accessoryItemHolder.getQuantity() + record.getQuantity());
+            for (CustomerInvoice invoice : invoices) {
+                if (Objects.equals(invoice.getItemCode(), itemCode)) {
+                    accessoryItemHolder.setQuantity(accessoryItemHolder.getQuantity() + invoice.getQuantity());
                 }
             }
-            accessoryRecords.add(accessoryItemHolder);
+            accessoryInvoices.add(accessoryItemHolder);
         }
-        accessoryRecords.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
-        return accessoryRecords;
+        accessoryInvoices.sort((c1, c2) -> Integer.compare(c2.getQuantity(), c1.getQuantity()));
+        LOGGER.info("Accessory invoices retrieved after date: " + startDate);
+        return accessoryInvoices;
     }
 
 }

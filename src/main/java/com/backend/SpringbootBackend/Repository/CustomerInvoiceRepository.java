@@ -8,7 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Repository
-public interface CustomerRecordRepository extends JpaRepository<CustomerInvoice, String> {
+public interface CustomerInvoiceRepository extends JpaRepository<CustomerInvoice, String> {
     List<CustomerInvoice> findByBillID(String billID);
     List<CustomerInvoice> findByDateAfter(LocalDate date);
 }

@@ -7,11 +7,13 @@ import com.backend.SpringbootBackend.Service.Record.PurchaseStockService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@PreAuthorize("hasAnyRole('ROLE_ADMIN', 'USER')")
 @RestController
 @RequestMapping("/api/upcoming-orders")
 @CrossOrigin(origins = "*") // Allows cross-origin requests (if needed)
